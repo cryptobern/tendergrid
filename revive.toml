@@ -1,0 +1,3 @@
+# The codebase is very bad at commenting exported symbols, so we'll disable this check.
+[rule.exported]
+disabled = true
