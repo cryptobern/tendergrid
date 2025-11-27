@@ -1,6 +1,6 @@
 module github.com/cometbft/cometbft
 
-go 1.22.11
+go 1.25
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -37,7 +37,7 @@ require (
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	golang.org/x/crypto v0.33.0
 	golang.org/x/net v0.35.0
@@ -45,7 +45,9 @@ require (
 	gonum.org/v1/gonum v0.15.1
 	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.5
+  gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums v0.0.0-20251127172845-8a61b8191b95
 )
+
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -109,6 +111,7 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect

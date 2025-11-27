@@ -12,6 +12,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/parser"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/quorum"
 
 	bc "github.com/cometbft/cometbft/blocksync"
 	cfg "github.com/cometbft/cometbft/config"
@@ -82,6 +84,9 @@ type Node struct {
 	indexerService    *txindex.IndexerService
 	prometheusSrv     *http.Server
 	pprofSrv          *http.Server
+
+	quorumSystem quorum.System             // This node's quorum specification
+	identityMap  parser.ProcessIdentityMap // Mapping of node identities to internal numerical IDs used by quorum.System
 }
 
 // Option sets a parameter for the node.
@@ -476,6 +481,28 @@ func NewNodeWithContext(ctx context.Context,
 	// Add private IDs to addrbook to block those peers being added
 	addrBook.AddPrivateIDs(splitAndTrimEmpty(config.P2P.PrivatePeerIDs, ",", " "))
 
+	// Load quorum system specification and try to find our personal system
+	consensusLogger.Info("Loading quorum system", "path", config.Consensus.QuorumSystemFile())
+
+	jsonSystem, err := parser.ParseAsymmetricSystem(config.Consensus.QuorumSystemFile())
+	if err != nil {
+		return nil, fmt.Errorf("Unable to read quorum specification: %w", err)
+	}
+
+	native, pidMap := jsonSystem.ToNativeQuorum(nil)
+
+	// .String() on this type will nicely hex-encode it.
+	address := pubKey.Address().String()
+	mappedID, ok := pidMap.FromString(address)
+	if !ok {
+		return nil, fmt.Errorf("Unable to map this node's address (%s) to numerical ID of quorum system", address)
+	}
+
+	mySystem, ok := native[mappedID.ID()]
+	if !ok {
+		return nil, fmt.Errorf("Unable to find this node's quorum system in quorum specification")
+	}
+
 	node := &Node{
 		config:        config,
 		genesisDoc:    genDoc,
@@ -504,6 +531,8 @@ func NewNodeWithContext(ctx context.Context,
 		indexerService:   indexerService,
 		blockIndexer:     blockIndexer,
 		eventBus:         eventBus,
+		quorumSystem:     mySystem,
+		identityMap:      pidMap,
 	}
 	node.BaseService = *service.NewBaseService(logger, "Node", node)
 

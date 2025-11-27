@@ -1011,6 +1011,10 @@ type ConsensusConfig struct {
 	PeerQueryMaj23SleepDuration time.Duration `mapstructure:"peer_query_maj23_sleep_duration"`
 
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
+
+	// Path to file containing quorum specification, relative to directory of
+	// consensus configuration.
+	QuorumSystem string `mapstructure:"quorum_system_file"`
 }
 
 // DefaultConsensusConfig returns a default configuration for the consensus service
@@ -1094,6 +1098,11 @@ func (cfg *ConsensusConfig) WalFile() string {
 // SetWalFile sets the path to the write-ahead log file
 func (cfg *ConsensusConfig) SetWalFile(walFile string) {
 	cfg.walFile = walFile
+}
+
+// QuorumSystemFile returns the full path to the quorum system specification.
+func (cfg *ConsensusConfig) QuorumSystemFile() string {
+	return rootify(cfg.QuorumSystem, cfg.RootDir)
 }
 
 // ValidateBasic performs basic validation (checking param bounds, etc.) and
