@@ -1100,6 +1100,13 @@ func (cfg *ConsensusConfig) SetWalFile(walFile string) {
 	cfg.walFile = walFile
 }
 
+// HasCustomQuorumSystem returns whether the config file specifies a custom
+// quorum system to use, or whether the fallback (i.e. a 2/3 majority quorum)
+// should be used.
+func (cfg *ConsensusConfig) HasCustomQuorumSystem() bool {
+	return cfg.QuorumSystem != ""
+}
+
 // QuorumSystemFile returns the full path to the quorum system specification.
 func (cfg *ConsensusConfig) QuorumSystemFile() string {
 	return rootify(cfg.QuorumSystem, cfg.RootDir)

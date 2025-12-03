@@ -383,6 +383,8 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums v0.0.0-20251127172845-8a61b8191b95 h1:ZcULAaOetfgg+DfnjcigJ7kJrpwVh9nGmsWr/acOxwc=
 gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums v0.0.0-20251127172845-8a61b8191b95/go.mod h1:EUb+vogfjjKbCP9oc9x1kU4hCc7mY0t9lWwChIBvdzI=
+gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums v0.0.0-20251203153306-42021cdb5b04 h1:bKh324g5B8trFYgQRLwi7xdsMI//CutF29tZItE0toI=
+gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums v0.0.0-20251203153306-42021cdb5b04/go.mod h1:EUb+vogfjjKbCP9oc9x1kU4hCc7mY0t9lWwChIBvdzI=
 go.etcd.io/bbolt v1.4.0-alpha.0.0.20240404170359-43604f3112c5 h1:qxen9oVGzDdIRP6ejyAJc760RwW4SnVDiTYTzwnXuxo=
 go.etcd.io/bbolt v1.4.0-alpha.0.0.20240404170359-43604f3112c5/go.mod h1:eW0HG9/oHQhvRCvb1/pIXW4cOvtDqeQK+XSi3TnwaXY=
 go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=

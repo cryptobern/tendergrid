@@ -39,15 +39,14 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.11.1
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+	gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums v0.0.0-20251203153306-42021cdb5b04
 	golang.org/x/crypto v0.33.0
 	golang.org/x/net v0.35.0
 	golang.org/x/sync v0.11.0
 	gonum.org/v1/gonum v0.15.1
 	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.5
-  gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums v0.0.0-20251127172845-8a61b8191b95
 )
-
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

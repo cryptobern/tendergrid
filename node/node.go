@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -13,7 +14,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/parser"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/process"
 	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/quorum"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/selector"
 
 	bc "github.com/cometbft/cometbft/blocksync"
 	cfg "github.com/cometbft/cometbft/config"
@@ -481,26 +484,53 @@ func NewNodeWithContext(ctx context.Context,
 	// Add private IDs to addrbook to block those peers being added
 	addrBook.AddPrivateIDs(splitAndTrimEmpty(config.P2P.PrivatePeerIDs, ",", " "))
 
-	// Load quorum system specification and try to find our personal system
-	consensusLogger.Info("Loading quorum system", "path", config.Consensus.QuorumSystemFile())
+	var mySystem quorum.System
+	var pidMap parser.ProcessIdentityMap
 
-	jsonSystem, err := parser.ParseAsymmetricSystem(config.Consensus.QuorumSystemFile())
-	if err != nil {
-		return nil, fmt.Errorf("Unable to read quorum specification: %w", err)
-	}
+	if config.Consensus.HasCustomQuorumSystem() {
+		// Load quorum system specification and try to find our personal system
+		consensusLogger.Info("Loading quorum system", "path", config.Consensus.QuorumSystemFile())
 
-	native, pidMap := jsonSystem.ToNativeQuorum(nil)
+		jsonSystem, err := parser.ParseAsymmetricSystem(config.Consensus.QuorumSystemFile())
+		if err != nil {
+			return nil, fmt.Errorf("Unable to read quorum specification: %w", err)
+		}
 
-	// .String() on this type will nicely hex-encode it.
-	address := pubKey.Address().String()
-	mappedID, ok := pidMap.FromString(address)
-	if !ok {
-		return nil, fmt.Errorf("Unable to map this node's address (%s) to numerical ID of quorum system", address)
-	}
+		native, pidMap := jsonSystem.ToNativeQuorum(nil)
 
-	mySystem, ok := native[mappedID.ID()]
-	if !ok {
-		return nil, fmt.Errorf("Unable to find this node's quorum system in quorum specification")
+		// .String() on this type will nicely hex-encode it.
+		address := pubKey.Address().String()
+		mappedID, ok := pidMap.FromString(address)
+		if !ok {
+			return nil, fmt.Errorf("Unable to map this node's address (%s) to numerical ID of quorum system", address)
+		}
+
+		mySystem, ok = native[mappedID.ID()]
+		if !ok {
+			return nil, fmt.Errorf("Unable to find this node's quorum system in quorum specification")
+		}
+	} else {
+
+		n := len(genDoc.Validators)
+		f := int(math.Ceil(float64(n)/3) - 1)
+		threshold := n - f
+
+		processes := make([]process.Process, 0, n)
+		pidMap = parser.NewProcessIdentityMap()
+		for idx, validator := range genDoc.Validators {
+			id := process.ID(idx)
+			name := validator.Address.String()
+			pidMap.Establish(name, id)
+			// Should be implementing the process.Process interface for the validator type, rather than using process.TestProcess, probably. But eh. Proof-of-concept!
+			processes = append(processes, &process.TestProcess{ManualID: id})
+		}
+		twoThirdsMajority, err := selector.NewThreshold(threshold, processes...)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to create implicit 2/3-majority quorum system: %w", err)
+		}
+
+		mySystem = quorum.NewSystem(twoThirdsMajority)
+		consensusLogger.Info("No custom quorum system specified. Using implicit k-out-of-n threshold selector as 2/3-majority quorum based on validators in genesis configuration", "k", threshold, "n", n)
 	}
 
 	node := &Node{
