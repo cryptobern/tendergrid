@@ -427,6 +427,11 @@ func (voteSet *VoteSet) GetByAddress(address []byte) *Vote {
 	return voteSet.votes[valIndex]
 }
 
+// HasTwoThirdsMajority returns true if there is a 2/3-majority of votes for
+// one specific block, at the current height + round.
+//
+// This decision rule is used when we want to move towards deciding a specific
+// value.
 func (voteSet *VoteSet) HasTwoThirdsMajority() bool {
 	if voteSet == nil {
 		return false
@@ -449,6 +454,11 @@ func (voteSet *VoteSet) IsCommit() bool {
 	return voteSet.maj23 != nil
 }
 
+// HasTwoThirdsAny returns true if there is a 2/3-majority of votes for
+// arbitrary blocks, at the current height + round.
+//
+// This decision rule is used when we want to e.g. skip ahead, as we fell
+// behind the repeated executions of the consensus protocol.
 func (voteSet *VoteSet) HasTwoThirdsAny() bool {
 	if voteSet == nil {
 		return false
