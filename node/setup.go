@@ -321,14 +321,18 @@ func createConsensusReactor(config *cfg.Config,
 	eventBus *types.EventBus,
 	consensusLogger log.Logger,
 	offlineStateSyncHeight int64,
+	quorumSystem *quorum.System,
+	identityMap *parser.ProcessIdentityMap,
 ) (*cs.Reactor, *cs.State) {
-	consensusState := cs.NewState(
+	consensusState := cs.NewStateWithQuorums(
 		config.Consensus,
 		state.Copy(),
 		blockExec,
 		blockStore,
 		mempool,
 		evidencePool,
+		quorumSystem,
+		identityMap,
 		cs.StateMetrics(csMetrics),
 		cs.OfflineStateSyncHeight(offlineStateSyncHeight),
 	)

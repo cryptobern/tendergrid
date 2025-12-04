@@ -14,6 +14,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/parser"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/process"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/quorum"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/selector"
 )
 
 const (
@@ -986,6 +990,32 @@ func RandValidatorSet(numValidators int, votingPower int64) (*ValidatorSet, []Pr
 	sort.Sort(PrivValidatorsByAddress(privValidators))
 
 	return NewValidatorSet(valz), privValidators
+}
+
+// TwoThirdsMajority constructs a 2/3-majority quorum system for a set of validators.
+//
+// EXPOSED FOR TESTING. May panic if valSet is empty.
+func TwoThirdsMajority(valSet *ValidatorSet) (quorum.System, parser.ProcessIdentityMap) {
+	n := len(valSet.Validators)
+	f := int(math.Ceil(float64(n)/3) - 1)
+	threshold := n - f
+
+	processes := make([]process.Process, 0, n)
+	pidMap := parser.NewProcessIdentityMap()
+	for idx, val := range valSet.Validators {
+		proc := process.TestProcess{ManualID: process.ID(idx)}
+		pidMap.Establish(val.Address.String(), process.ID(idx))
+		processes = append(processes, &proc)
+	}
+
+	majoritySelector, err := selector.NewThreshold(threshold, processes...)
+	if err != nil {
+		panic(fmt.Sprintf("types.TwoThirdsMajority: %v", err))
+	}
+
+	system := quorum.NewSystem(majoritySelector)
+
+	return system, pidMap
 }
 
 // safe addition/subtraction/multiplication

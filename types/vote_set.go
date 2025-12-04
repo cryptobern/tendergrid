@@ -9,6 +9,8 @@ import (
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/parser"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/quorum"
 )
 
 const (
@@ -73,6 +75,9 @@ type VoteSet struct {
 	maj23         *BlockID               // First 2/3 majority seen
 	votesByBlock  map[string]*blockVotes // string(blockHash|blockParts) -> blockVotes
 	peerMaj23s    map[P2PID]BlockID      // Maj23 for each peer
+
+	quorumSystem *quorum.System
+	pidMap       *parser.ProcessIdentityMap
 }
 
 // NewVoteSet instantiates all fields of a new vote set. This constructor requires
@@ -104,6 +109,23 @@ func NewExtendedVoteSet(chainID string, height int64, round int32,
 	signedMsgType cmtproto.SignedMsgType, valSet *ValidatorSet) *VoteSet {
 	vs := NewVoteSet(chainID, height, round, signedMsgType, valSet)
 	vs.extensionsEnabled = true
+	return vs
+}
+
+// NewVoteSetWithQuorums initializes a new vote set capable of evaluating
+// quorum-system predicates on its votes.
+//
+// See [NewVoteSet] for additional details.
+func NewVoteSetWithQuorums(
+	chainID string, height int64, round int32,
+	signedMsgType cmtproto.SignedMsgType, valSet *ValidatorSet,
+	quorumSystem *quorum.System, pidMap *parser.ProcessIdentityMap,
+) *VoteSet {
+	vs := NewVoteSet(chainID, height, round, signedMsgType, valSet)
+
+	vs.quorumSystem = quorumSystem
+	vs.pidMap = pidMap
+
 	return vs
 }
 
@@ -309,6 +331,7 @@ func (voteSet *VoteSet) addVerifiedVote(
 	votesByBlock.addVerifiedVote(vote, votingPower)
 
 	// If we just crossed the quorum threshold and have 2/3 majority...
+	// TODO MS touch this
 	if origSum < quorum && quorum <= votesByBlock.sum {
 		// Only consider the first quorum reached
 		if voteSet.maj23 == nil {
@@ -465,6 +488,7 @@ func (voteSet *VoteSet) HasTwoThirdsAny() bool {
 	}
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+	// TODO MS this is a thing to touch
 	return voteSet.sum > voteSet.valSet.TotalVotingPower()*2/3
 }
 

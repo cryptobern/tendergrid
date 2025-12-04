@@ -25,8 +25,9 @@ func TestMain(m *testing.M) {
 
 func TestPeerCatchupRounds(t *testing.T) {
 	valSet, privVals := types.RandValidatorSet(10, 1)
+	system, pidMap := types.TwoThirdsMajority(valSet)
 
-	hvs := NewExtendedHeightVoteSet(test.DefaultTestChainID, 1, valSet)
+	hvs := NewExtendedHeightVoteSet(test.DefaultTestChainID, 1, valSet, &system, &pidMap)
 
 	vote999_0 := makeVoteHR(1, 0, 999, privVals)
 	added, err := hvs.AddVote(vote999_0, "peer1", true)
@@ -57,15 +58,16 @@ func TestPeerCatchupRounds(t *testing.T) {
 
 func TestInconsistentExtensionData(t *testing.T) {
 	valSet, privVals := types.RandValidatorSet(10, 1)
+	system, pidMap := types.TwoThirdsMajority(valSet)
 
-	hvsE := NewExtendedHeightVoteSet(test.DefaultTestChainID, 1, valSet)
+	hvsE := NewExtendedHeightVoteSet(test.DefaultTestChainID, 1, valSet, &system, &pidMap)
 	voteNoExt := makeVoteHR(1, 0, 20, privVals)
 	voteNoExt.Extension, voteNoExt.ExtensionSignature = nil, nil
 	require.Panics(t, func() {
 		_, _ = hvsE.AddVote(voteNoExt, "peer1", false)
 	})
 
-	hvsNoE := NewHeightVoteSet(test.DefaultTestChainID, 1, valSet)
+	hvsNoE := NewHeightVoteSet(test.DefaultTestChainID, 1, valSet, &system, &pidMap)
 	voteExt := makeVoteHR(1, 0, 20, privVals)
 	require.Panics(t, func() {
 		_, _ = hvsNoE.AddVote(voteExt, "peer1", true)

@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/parser"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/quorum"
 
 	cfg "github.com/cometbft/cometbft/config"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
@@ -145,10 +147,33 @@ type State struct {
 
 	// offline state sync height indicating to which height the node synced offline
 	offlineStateSyncHeight int64
+
+	// Quorum system to determine whether certain sets of votes constitute a quorum.
+	quorumSystem *quorum.System
+	identityMap  *parser.ProcessIdentityMap
 }
 
 // StateOption sets an optional parameter on the State.
 type StateOption func(*State)
+
+// NewStateWithQuorums returns a new state which is able to perform quorum operations.
+func NewStateWithQuorums(
+	config *cfg.ConsensusConfig,
+	state sm.State,
+	blockExec *sm.BlockExecutor,
+	blockStore sm.BlockStore,
+	txNotifier txNotifier,
+	evpool evidencePool,
+	quorumSystem *quorum.System,
+	identityMap *parser.ProcessIdentityMap,
+	options ...StateOption,
+) *State {
+	out := NewState(config, state, blockExec, blockStore, txNotifier, evpool, options...)
+	out.quorumSystem = quorumSystem
+	out.identityMap = identityMap
+
+	return out
+}
 
 // NewState returns a new State.
 func NewState(
@@ -741,9 +766,9 @@ func (cs *State) updateToState(state sm.State) {
 	cs.ValidBlock = nil
 	cs.ValidBlockParts = nil
 	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(height) {
-		cs.Votes = cstypes.NewExtendedHeightVoteSet(state.ChainID, height, validators)
+		cs.Votes = cstypes.NewExtendedHeightVoteSet(state.ChainID, height, validators, cs.quorumSystem, cs.identityMap)
 	} else {
-		cs.Votes = cstypes.NewHeightVoteSet(state.ChainID, height, validators)
+		cs.Votes = cstypes.NewHeightVoteSet(state.ChainID, height, validators, cs.quorumSystem, cs.identityMap)
 	}
 	cs.CommitRound = -1
 	cs.LastValidators = state.LastValidators

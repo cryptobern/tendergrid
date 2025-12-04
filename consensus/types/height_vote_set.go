@@ -11,6 +11,8 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/parser"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/quorum"
 )
 
 type RoundVoteSet struct {
@@ -48,21 +50,28 @@ type HeightVoteSet struct {
 	round             int32                  // max tracked round
 	roundVoteSets     map[int32]RoundVoteSet // keys: [0...round]
 	peerCatchupRounds map[p2p.ID][]int32     // keys: peer.ID; values: at most 2 rounds
+
+	quorumSystem *quorum.System
+	pidMap       *parser.ProcessIdentityMap
 }
 
-func NewHeightVoteSet(chainID string, height int64, valSet *types.ValidatorSet) *HeightVoteSet {
+func NewHeightVoteSet(chainID string, height int64, valSet *types.ValidatorSet, quorumSystem *quorum.System, pidMap *parser.ProcessIdentityMap) *HeightVoteSet {
 	hvs := &HeightVoteSet{
 		chainID:           chainID,
 		extensionsEnabled: false,
+		quorumSystem:      quorumSystem,
+		pidMap:            pidMap,
 	}
 	hvs.Reset(height, valSet)
 	return hvs
 }
 
-func NewExtendedHeightVoteSet(chainID string, height int64, valSet *types.ValidatorSet) *HeightVoteSet {
+func NewExtendedHeightVoteSet(chainID string, height int64, valSet *types.ValidatorSet, quorumSystem *quorum.System, pidMap *parser.ProcessIdentityMap) *HeightVoteSet {
 	hvs := &HeightVoteSet{
 		chainID:           chainID,
 		extensionsEnabled: true,
+		quorumSystem:      quorumSystem,
+		pidMap:            pidMap,
 	}
 	hvs.Reset(height, valSet)
 	return hvs
@@ -118,8 +127,10 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrevoteType, hvs.valSet)
 	var precommits *types.VoteSet
 	if hvs.extensionsEnabled {
+		// TODO MS change to w/ quorum here
 		precommits = types.NewExtendedVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
 	} else {
+		// TODO MS and here
 		precommits = types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
 	}
 	hvs.roundVoteSets[round] = RoundVoteSet{
