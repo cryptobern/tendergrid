@@ -124,14 +124,12 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 		panic("addRound() for an existing round")
 	}
 	// log.Debug("addRound(round)", "round", round)
-	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrevoteType, hvs.valSet)
+	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrevoteType, hvs.valSet, hvs.quorumSystem, hvs.pidMap)
 	var precommits *types.VoteSet
 	if hvs.extensionsEnabled {
-		// TODO MS change to w/ quorum here
-		precommits = types.NewExtendedVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
+		precommits = types.NewExtendedVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet, hvs.quorumSystem, hvs.pidMap)
 	} else {
-		// TODO MS and here
-		precommits = types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
+		precommits = types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet, hvs.quorumSystem, hvs.pidMap)
 	}
 	hvs.roundVoteSets[round] = RoundVoteSet{
 		Prevotes:   prevotes,

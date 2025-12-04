@@ -354,6 +354,9 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
+			// TODO MS randState() will not provide the consensus state with a quorum
+			// system, so that'll likely later panic.
+			// Unclear how to change this, as they work with validator stubs here.
 			cs, vs := randState(1)
 			validator := vs[0]
 			validator.Height = testCase.storedHeight
@@ -373,9 +376,9 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 
 			var voteSet *types.VoteSet
 			if testCase.includeExtensions {
-				voteSet = types.NewExtendedVoteSet(cs.state.ChainID, testCase.storedHeight, 0, cmtproto.PrecommitType, cs.state.Validators)
+				voteSet = types.NewExtendedVoteSet(cs.state.ChainID, testCase.storedHeight, 0, cmtproto.PrecommitType, cs.state.Validators, cs.quorumSystem, cs.identityMap)
 			} else {
-				voteSet = types.NewVoteSet(cs.state.ChainID, testCase.storedHeight, 0, cmtproto.PrecommitType, cs.state.Validators)
+				voteSet = types.NewVoteSet(cs.state.ChainID, testCase.storedHeight, 0, cmtproto.PrecommitType, cs.state.Validators, cs.quorumSystem, cs.identityMap)
 			}
 			signedVote := signVote(validator, cmtproto.PrecommitType, propBlock.Hash(), blockParts.Header(), testCase.includeExtensions)
 

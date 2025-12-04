@@ -82,8 +82,11 @@ type VoteSet struct {
 
 // NewVoteSet instantiates all fields of a new vote set. This constructor requires
 // that no vote extension data be present on the votes that are added to the set.
-func NewVoteSet(chainID string, height int64, round int32,
-	signedMsgType cmtproto.SignedMsgType, valSet *ValidatorSet) *VoteSet {
+func NewVoteSet(
+	chainID string, height int64, round int32,
+	signedMsgType cmtproto.SignedMsgType, valSet *ValidatorSet,
+	quorumSystem *quorum.System, pidMap *parser.ProcessIdentityMap,
+) *VoteSet {
 	if height == 0 {
 		panic("Cannot make VoteSet for height == 0, doesn't make sense.")
 	}
@@ -99,6 +102,8 @@ func NewVoteSet(chainID string, height int64, round int32,
 		maj23:         nil,
 		votesByBlock:  make(map[string]*blockVotes, valSet.Size()),
 		peerMaj23s:    make(map[P2PID]BlockID),
+		quorumSystem:  quorumSystem,
+		pidMap:        pidMap,
 	}
 }
 
@@ -106,25 +111,11 @@ func NewVoteSet(chainID string, height int64, round int32,
 // The VoteSet constructed with NewExtendedVoteSet verifies the vote extension
 // data for every vote added to the set.
 func NewExtendedVoteSet(chainID string, height int64, round int32,
-	signedMsgType cmtproto.SignedMsgType, valSet *ValidatorSet) *VoteSet {
-	vs := NewVoteSet(chainID, height, round, signedMsgType, valSet)
-	vs.extensionsEnabled = true
-	return vs
-}
-
-// NewVoteSetWithQuorums initializes a new vote set capable of evaluating
-// quorum-system predicates on its votes.
-//
-// See [NewVoteSet] for additional details.
-func NewVoteSetWithQuorums(
-	chainID string, height int64, round int32,
 	signedMsgType cmtproto.SignedMsgType, valSet *ValidatorSet,
 	quorumSystem *quorum.System, pidMap *parser.ProcessIdentityMap,
 ) *VoteSet {
-	vs := NewVoteSet(chainID, height, round, signedMsgType, valSet)
-
-	vs.quorumSystem = quorumSystem
-	vs.pidMap = pidMap
+	vs := NewVoteSet(chainID, height, round, signedMsgType, valSet, quorumSystem, pidMap)
+	vs.extensionsEnabled = true
 
 	return vs
 }

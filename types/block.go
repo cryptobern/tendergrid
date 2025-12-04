@@ -9,6 +9,8 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/parser"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/quorum"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
@@ -1072,8 +1074,8 @@ func (ec *ExtendedCommit) Clone() *ExtendedCommit {
 // Panics if signatures from the ExtendedCommit can't be added to the voteset.
 // Panics if any of the votes have invalid or absent vote extension data.
 // Inverse of VoteSet.MakeExtendedCommit().
-func (ec *ExtendedCommit) ToExtendedVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
-	voteSet := NewExtendedVoteSet(chainID, ec.Height, ec.Round, cmtproto.PrecommitType, vals)
+func (ec *ExtendedCommit) ToExtendedVoteSet(chainID string, vals *ValidatorSet, quorumSystem *quorum.System, pidMap *parser.ProcessIdentityMap) *VoteSet {
+	voteSet := NewExtendedVoteSet(chainID, ec.Height, ec.Round, cmtproto.PrecommitType, vals, quorumSystem, pidMap)
 	ec.addSigsToVoteSet(voteSet)
 	return voteSet
 }
@@ -1098,8 +1100,8 @@ func (ec *ExtendedCommit) addSigsToVoteSet(voteSet *VoteSet) {
 // ToVoteSet constructs a VoteSet from the Commit and validator set.
 // Panics if signatures from the commit can't be added to the voteset.
 // Inverse of VoteSet.MakeCommit().
-func (commit *Commit) ToVoteSet(chainID string, vals *ValidatorSet) *VoteSet {
-	voteSet := NewVoteSet(chainID, commit.Height, commit.Round, cmtproto.PrecommitType, vals)
+func (commit *Commit) ToVoteSet(chainID string, vals *ValidatorSet, quorumSystem *quorum.System, pidMap *parser.ProcessIdentityMap) *VoteSet {
+	voteSet := NewVoteSet(chainID, commit.Height, commit.Round, cmtproto.PrecommitType, vals, quorumSystem, pidMap)
 	for idx, cs := range commit.Signatures {
 		if cs.BlockIDFlag == BlockIDFlagAbsent {
 			continue // OK, some precommits can be missing.

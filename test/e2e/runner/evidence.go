@@ -178,6 +178,7 @@ func generateLightClientAttackEvidence(
 	// add a new bogus validator and remove an existing one to
 	// vary the validator set slightly
 	pv, conflictingVals, err := mutateValidatorSet(ctx, privVals, vals, !validEvidence)
+	quorumSystem, pidMap := types.TwoThirdsMajority(conflictingVals)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +187,7 @@ func generateLightClientAttackEvidence(
 
 	// create a commit for the forged header
 	blockID := makeBlockID(header.Hash(), 1000, []byte("partshash"))
-	voteSet := types.NewVoteSet(chainID, forgedHeight, 0, cmtproto.SignedMsgType(2), conflictingVals)
+	voteSet := types.NewVoteSet(chainID, forgedHeight, 0, cmtproto.SignedMsgType(2), conflictingVals, &quorumSystem, &pidMap)
 	commit, err := test.MakeCommitFromVoteSet(blockID, voteSet, pv, forgedTime)
 	if err != nil {
 		return nil, err

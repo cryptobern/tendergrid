@@ -193,6 +193,7 @@ func TestVerify_ForwardLunaticAttack(t *testing.T) {
 
 func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 	conflictingVals, conflictingPrivVals := types.RandValidatorSet(5, 10)
+	quorumSystem, pidMap := types.TwoThirdsMajority(conflictingVals)
 	trustedHeader := makeHeaderRandom(10)
 
 	conflictingHeader := makeHeaderRandom(10)
@@ -207,7 +208,7 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 	// we are simulating a duplicate vote attack where all the validators in the conflictingVals set
 	// except the last validator vote twice
 	blockID := makeBlockID(conflictingHeader.Hash(), 1000, []byte("partshash"))
-	voteSet := types.NewVoteSet(evidenceChainID, 10, 1, cmtproto.SignedMsgType(2), conflictingVals)
+	voteSet := types.NewVoteSet(evidenceChainID, 10, 1, cmtproto.SignedMsgType(2), conflictingVals, &quorumSystem, &pidMap)
 	commit, err := test.MakeCommitFromVoteSet(blockID, voteSet, conflictingPrivVals[:4], defaultEvidenceTime)
 	require.NoError(t, err)
 	ev := &types.LightClientAttackEvidence{
@@ -225,7 +226,7 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 	}
 
 	trustedBlockID := makeBlockID(trustedHeader.Hash(), 1000, []byte("partshash"))
-	trustedVoteSet := types.NewVoteSet(evidenceChainID, 10, 1, cmtproto.SignedMsgType(2), conflictingVals)
+	trustedVoteSet := types.NewVoteSet(evidenceChainID, 10, 1, cmtproto.SignedMsgType(2), conflictingVals, &quorumSystem, &pidMap)
 	trustedCommit, err := test.MakeCommitFromVoteSet(trustedBlockID, trustedVoteSet, conflictingPrivVals, defaultEvidenceTime)
 	require.NoError(t, err)
 	trustedSignedHeader := &types.SignedHeader{
@@ -278,6 +279,7 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 
 func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
 	conflictingVals, conflictingPrivVals := types.RandValidatorSet(5, 10)
+	quorumSystem, pidMap := types.TwoThirdsMajority(conflictingVals)
 
 	conflictingHeader := makeHeaderRandom(10)
 	conflictingHeader.ValidatorsHash = conflictingVals.Hash()
@@ -291,7 +293,7 @@ func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
 	// we are simulating an amnesia attack where all the validators in the conflictingVals set
 	// except the last validator vote twice. However this time the commits are of different rounds.
 	blockID := makeBlockID(conflictingHeader.Hash(), 1000, []byte("partshash"))
-	voteSet := types.NewVoteSet(evidenceChainID, 10, 0, cmtproto.SignedMsgType(2), conflictingVals)
+	voteSet := types.NewVoteSet(evidenceChainID, 10, 0, cmtproto.SignedMsgType(2), conflictingVals, &quorumSystem, &pidMap)
 	commit, err := test.MakeCommitFromVoteSet(blockID, voteSet, conflictingPrivVals, defaultEvidenceTime)
 	require.NoError(t, err)
 	ev := &types.LightClientAttackEvidence{
@@ -309,7 +311,7 @@ func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
 	}
 
 	trustedBlockID := makeBlockID(trustedHeader.Hash(), 1000, []byte("partshash"))
-	trustedVoteSet := types.NewVoteSet(evidenceChainID, 10, 1, cmtproto.SignedMsgType(2), conflictingVals)
+	trustedVoteSet := types.NewVoteSet(evidenceChainID, 10, 1, cmtproto.SignedMsgType(2), conflictingVals, &quorumSystem, &pidMap)
 	trustedCommit, err := test.MakeCommitFromVoteSet(trustedBlockID, trustedVoteSet, conflictingPrivVals, defaultEvidenceTime)
 	require.NoError(t, err)
 	trustedSignedHeader := &types.SignedHeader{
@@ -461,6 +463,7 @@ func makeLunaticEvidence(
 	commonTime, attackTime time.Time,
 ) (ev *types.LightClientAttackEvidence, trusted *types.LightBlock, common *types.LightBlock) {
 	commonValSet, commonPrivVals := types.RandValidatorSet(totalVals, defaultVotingPower)
+	quorumSystem, pidMap := types.TwoThirdsMajority(commonValSet)
 
 	require.Greater(t, totalVals, byzVals)
 
@@ -484,7 +487,7 @@ func makeLunaticEvidence(
 	conflictingHeader.ValidatorsHash = conflictingVals.Hash()
 
 	blockID := makeBlockID(conflictingHeader.Hash(), 1000, []byte("partshash"))
-	voteSet := types.NewVoteSet(evidenceChainID, height, 1, cmtproto.SignedMsgType(2), conflictingVals)
+	voteSet := types.NewVoteSet(evidenceChainID, height, 1, cmtproto.SignedMsgType(2), conflictingVals, &quorumSystem, &pidMap)
 	commit, err := test.MakeCommitFromVoteSet(blockID, voteSet, conflictingPrivVals, defaultEvidenceTime)
 	require.NoError(t, err)
 	ev = &types.LightClientAttackEvidence{
@@ -511,7 +514,8 @@ func makeLunaticEvidence(
 	}
 	trustedBlockID := makeBlockID(trustedHeader.Hash(), 1000, []byte("partshash"))
 	trustedVals, privVals := types.RandValidatorSet(totalVals, defaultVotingPower)
-	trustedVoteSet := types.NewVoteSet(evidenceChainID, height, 1, cmtproto.SignedMsgType(2), trustedVals)
+	quorumSystem2, pidMap2 := types.TwoThirdsMajority(trustedVals)
+	trustedVoteSet := types.NewVoteSet(evidenceChainID, height, 1, cmtproto.SignedMsgType(2), trustedVals, &quorumSystem2, &pidMap2)
 	trustedCommit, err := test.MakeCommitFromVoteSet(trustedBlockID, trustedVoteSet, privVals, defaultEvidenceTime)
 	require.NoError(t, err)
 	trusted = &types.LightBlock{

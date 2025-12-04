@@ -641,7 +641,7 @@ func (cs *State) votesFromExtendedCommit(state sm.State) (*types.VoteSet, error)
 		return nil, fmt.Errorf("heights don't match in votesFromExtendedCommit %v!=%v",
 			ec.Height, state.LastBlockHeight)
 	}
-	vs := ec.ToExtendedVoteSet(state.ChainID, state.LastValidators)
+	vs := ec.ToExtendedVoteSet(state.ChainID, state.LastValidators, cs.quorumSystem, cs.identityMap)
 	if !vs.HasTwoThirdsMajority() {
 		return nil, errors.New("extended commit does not have +2/3 majority")
 	}
@@ -660,7 +660,7 @@ func (cs *State) votesFromSeenCommit(state sm.State) (*types.VoteSet, error) {
 		return nil, fmt.Errorf("heights don't match in votesFromSeenCommit %v!=%v",
 			commit.Height, state.LastBlockHeight)
 	}
-	vs := commit.ToVoteSet(state.ChainID, state.LastValidators)
+	vs := commit.ToVoteSet(state.ChainID, state.LastValidators, cs.quorumSystem, cs.identityMap)
 	if !vs.HasTwoThirdsMajority() {
 		return nil, errors.New("commit does not have +2/3 majority")
 	}

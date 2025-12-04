@@ -513,11 +513,12 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			height, round := int64(1), int32(0)
 			valSet, privValidators := RandValidatorSet(5, 10)
+			quorumSystem, pidMap := TwoThirdsMajority(valSet)
 			var voteSet *VoteSet
 			if tc.requireExtensions {
-				voteSet = NewExtendedVoteSet("test_chain_id", height, round, cmtproto.PrecommitType, valSet)
+				voteSet = NewExtendedVoteSet("test_chain_id", height, round, cmtproto.PrecommitType, valSet, &quorumSystem, &pidMap)
 			} else {
-				voteSet = NewVoteSet("test_chain_id", height, round, cmtproto.PrecommitType, valSet)
+				voteSet = NewVoteSet("test_chain_id", height, round, cmtproto.PrecommitType, valSet, &quorumSystem, &pidMap)
 			}
 
 			val0 := privValidators[0]
@@ -569,13 +570,14 @@ func randVoteSet(
 	extEnabled bool,
 ) (*VoteSet, *ValidatorSet, []PrivValidator) {
 	valSet, privValidators := RandValidatorSet(numValidators, votingPower)
+	quorumSystem, pidMap := TwoThirdsMajority(valSet)
 	if extEnabled {
 		if signedMsgType != cmtproto.PrecommitType {
 			return nil, nil, nil
 		}
-		return NewExtendedVoteSet("test_chain_id", height, round, signedMsgType, valSet), valSet, privValidators
+		return NewExtendedVoteSet("test_chain_id", height, round, signedMsgType, valSet, &quorumSystem, &pidMap), valSet, privValidators
 	}
-	return NewVoteSet("test_chain_id", height, round, signedMsgType, valSet), valSet, privValidators
+	return NewVoteSet("test_chain_id", height, round, signedMsgType, valSet, &quorumSystem, &pidMap), valSet, privValidators
 }
 
 // Convenience: Return new vote with different validator address/index

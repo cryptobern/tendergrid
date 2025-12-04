@@ -539,11 +539,12 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 			blockID := makeBlockIDRandom()
 
 			valSet, vals := RandValidatorSet(10, 1)
+			quorumSystem, pidMap := TwoThirdsMajority(valSet)
 			var voteSet *VoteSet
 			if testCase.includeExtension {
-				voteSet = NewExtendedVoteSet("test_chain_id", 3, 1, cmtproto.PrecommitType, valSet)
+				voteSet = NewExtendedVoteSet("test_chain_id", 3, 1, cmtproto.PrecommitType, valSet, &quorumSystem, &pidMap)
 			} else {
-				voteSet = NewVoteSet("test_chain_id", 3, 1, cmtproto.PrecommitType, valSet)
+				voteSet = NewVoteSet("test_chain_id", 3, 1, cmtproto.PrecommitType, valSet, &quorumSystem, &pidMap)
 			}
 			for i := 0; i < len(vals); i++ {
 				pubKey, err := vals[i].GetPubKey()
@@ -592,7 +593,8 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 // Panics if signatures from the ExtendedCommit can't be added to the voteset.
 // Inverse of VoteSet.MakeExtendedCommit().
 func toVoteSet(ec *ExtendedCommit, chainID string, vals *ValidatorSet) *VoteSet {
-	voteSet := NewVoteSet(chainID, ec.Height, ec.Round, cmtproto.PrecommitType, vals)
+	quorumSystem, pidMap := TwoThirdsMajority(vals)
+	voteSet := NewVoteSet(chainID, ec.Height, ec.Round, cmtproto.PrecommitType, vals, &quorumSystem, &pidMap)
 	ec.addSigsToVoteSet(voteSet)
 	return voteSet
 }
@@ -620,6 +622,7 @@ func TestExtendedCommitToVoteSet(t *testing.T) {
 			h := int64(3)
 
 			voteSet, valSet, vals := randVoteSet(h-1, 1, cmtproto.PrecommitType, 10, 1, true)
+			quorumSystem, pidMap := TwoThirdsMajority(valSet)
 			extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), true)
 			assert.NoError(t, err)
 
@@ -636,7 +639,7 @@ func TestExtendedCommitToVoteSet(t *testing.T) {
 			chainID := voteSet.ChainID()
 			var voteSet2 *VoteSet
 			if testCase.includeExtension {
-				voteSet2 = extCommit.ToExtendedVoteSet(chainID, valSet)
+				voteSet2 = extCommit.ToExtendedVoteSet(chainID, valSet, &quorumSystem, &pidMap)
 			} else {
 				voteSet2 = toVoteSet(extCommit, chainID, valSet)
 			}
