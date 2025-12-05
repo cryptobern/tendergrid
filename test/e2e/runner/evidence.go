@@ -206,7 +206,8 @@ func generateLightClientAttackEvidence(
 			},
 			ValidatorSet: conflictingVals,
 		},
-		CommonHeight:     height,
+		CommonHeight: height,
+		// [MS Quorums TotalVotingPower]: TODO evidence-handling
 		TotalVotingPower: vals.TotalVotingPower(),
 		Timestamp:        evTime,
 	}

@@ -305,6 +305,10 @@ func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a t
 }
 
 func (bcR *Reactor) localNodeBlocksTheChain(state sm.State) bool {
+	// [MS Quorums TotalVotingPower]: TODO, this is used as one condition of when to
+	// switch from catching-up to producing consensus. A node will switch if
+	// either it has caught up, or it "blocks the chain" because its voting power
+	// is too high. Unsure why they do this / if it's needed at all.
 	_, val := state.Validators.GetByAddress(bcR.localAddr)
 	if val == nil {
 		return false

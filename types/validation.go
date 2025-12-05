@@ -33,6 +33,7 @@ func VerifyCommit(chainID string, vals *ValidatorSet, blockID BlockID,
 
 	// calculate voting power needed. Note that total voting power is capped to
 	// 1/8th of max int64 so this operation should never overflow
+	// [MS Quorums TotalVotingPower]: TODO change to quorums
 	votingPowerNeeded := vals.TotalVotingPower() * 2 / 3
 
 	// ignore all absent signatures
@@ -95,6 +96,7 @@ func verifyCommitLightInternal(
 	}
 
 	// calculate voting power needed
+	// [MS Quorums TotalVotingPower]: TODO change to quorums
 	votingPowerNeeded := vals.TotalVotingPower() * 2 / 3
 
 	// ignore all commit signatures that are not for the block
@@ -166,6 +168,7 @@ func verifyCommitLightTrustingInternal(
 	}
 
 	// safely calculate voting power needed.
+	// [MS Quorums TotalVotingPower]: TODO change to quorums
 	totalVotingPowerMulByNumerator, overflow := safeMul(vals.TotalVotingPower(), int64(trustLevel.Numerator))
 	if overflow {
 		return errors.New("int64 overflow while calculating voting power needed. please provide smaller trustLevel numerator")

@@ -69,8 +69,9 @@ func NewDuplicateVoteEvidence(vote1, vote2 *Vote, blockTime time.Time, valSet *V
 		voteB = vote1
 	}
 	return &DuplicateVoteEvidence{
-		VoteA:            voteA,
-		VoteB:            voteB,
+		VoteA: voteA,
+		VoteB: voteB,
+		// [MS Quorums TotalVotingPower]: TODO evidence-handling
 		TotalVotingPower: valSet.TotalVotingPower(),
 		ValidatorPower:   val.VotingPower,
 		Timestamp:        blockTime,
@@ -337,10 +338,10 @@ func (l *LightClientAttackEvidence) Height() int64 {
 // String returns a string representation of LightClientAttackEvidence
 func (l *LightClientAttackEvidence) String() string {
 	return fmt.Sprintf(`LightClientAttackEvidence{
-		ConflictingBlock: %v, 
-		CommonHeight: %d, 
-		ByzatineValidators: %v, 
-		TotalVotingPower: %d, 
+		ConflictingBlock: %v,
+		CommonHeight: %d,
+		ByzatineValidators: %v,
+		TotalVotingPower: %d,
 		Timestamp: %v}#%X`,
 		l.ConflictingBlock.String(), l.CommonHeight, l.ByzantineValidators,
 		l.TotalVotingPower, l.Timestamp, l.Hash())

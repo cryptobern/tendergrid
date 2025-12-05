@@ -143,6 +143,7 @@ func (vals *ValidatorSet) IncrementProposerPriority(times int32) {
 	// Cap the difference between priorities to be proportional to 2*totalPower by
 	// re-normalizing priorities, i.e., rescale all priorities by multiplying with:
 	//  2*totalVotingPower/(maxPriority - minPriority)
+	// [MS Quorums TotalVotingPower]: TODO this is part of leader election, how to handle this?
 	diffMax := PriorityWindowSizeFactor * vals.TotalVotingPower()
 	vals.RescalePriorities(diffMax)
 	vals.shiftByAvgProposerPriority()
@@ -191,6 +192,7 @@ func (vals *ValidatorSet) incrementProposerPriority() *Validator {
 	// Decrement the validator with most ProposerPriority.
 	mostest := vals.getValWithMostPriority()
 	// Mind the underflow.
+	// [MS Quorums TotalVotingPower]: TODO this is part of leader election, how to handle this?
 	mostest.ProposerPriority = safeSubClip(mostest.ProposerPriority, vals.TotalVotingPower())
 
 	return mostest
@@ -481,6 +483,7 @@ func verifyUpdates(
 		return delta(updatesCopy[i], vals) < delta(updatesCopy[j], vals)
 	})
 
+	// [MS Quorums TotalVotingPower]: TODO part of validator set updates
 	tvpAfterRemovals := vals.TotalVotingPower() - removedPower
 	for _, upd := range updatesCopy {
 		tvpAfterRemovals += delta(upd, vals)
@@ -672,6 +675,7 @@ func (vals *ValidatorSet) updateWithChangeSet(changes []*Validator, allowDeletes
 	vals.updateTotalVotingPower() // will panic if total voting power > MaxTotalVotingPower
 
 	// Scale and center.
+	// [MS Quorums TotalVotingPower]: TODO part of validator set updates
 	vals.RescalePriorities(PriorityWindowSizeFactor * vals.TotalVotingPower())
 	vals.shiftByAvgProposerPriority()
 
@@ -939,6 +943,7 @@ func ValidatorSetFromProto(vp *cmtproto.ValidatorSet) (*ValidatorSet, error) {
 	// power hence we need to recompute it.
 	// FIXME: We should look to remove TotalVotingPower from proto or add it in the validators hash
 	// so we don't have to do this
+	// [MS Quorums TotalVotingPower]: TODO probably just serves to populate field to allow serialiation
 	vals.TotalVotingPower()
 
 	return vals, vals.ValidateBasic()

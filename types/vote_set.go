@@ -10,6 +10,7 @@ import (
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/parser"
+	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/process"
 	"gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums/pkg/quorum"
 )
 
@@ -316,6 +317,8 @@ func (voteSet *VoteSet) addVerifiedVote(
 
 	// Before adding to votesByBlock, see if we'll exceed quorum
 	origSum := votesByBlock.sum
+	// [MS Quorums TotalVotingPower]: TODO change to quorums
+	// TODO continue here
 	quorum := voteSet.valSet.TotalVotingPower()*2/3 + 1
 
 	// Add vote to votesByBlock
@@ -455,6 +458,17 @@ func (voteSet *VoteSet) HasTwoThirdsMajority() bool {
 	return voteSet.maj23 != nil
 }
 
+// IsQuorumForBlock returns true if this VoteSet contains a set of votes, for
+// one specific block, which constitutes a quorum.
+//
+// This effectively just checks whether `voteSet.maj23` was ever set, which
+// happens iff there was a quorum of votes for one specific block.
+// This is a weird way of handling it, but emulates the existing Tendermint
+// code, see [HasTwoThirdsMajority].
+func (voteSet *VoteSet) IsQuorumForBlock() bool {
+	return voteSet.HasTwoThirdsMajority()
+}
+
 // Implements VoteSetReader.
 func (voteSet *VoteSet) IsCommit() bool {
 	if voteSet == nil {
@@ -479,8 +493,37 @@ func (voteSet *VoteSet) HasTwoThirdsAny() bool {
 	}
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
-	// TODO MS this is a thing to touch
 	return voteSet.sum > voteSet.valSet.TotalVotingPower()*2/3
+}
+
+// IsQuorum returns true if this voteSet contains votes, for any block, from
+// validators making up a quorum.
+//
+// This is the quorum version of [HasTwoThirdsAny].
+func (voteSet *VoteSet) IsQuorum(quorumSystem *quorum.System, pidMap *parser.ProcessIdentityMap) bool {
+	if voteSet == nil {
+		return false
+	}
+
+	if quorumSystem == nil || pidMap == nil {
+		panic(fmt.Sprintf("VoteSet.IsQuorum: quorumSystem (%v) or pidMap (%v) was nil", quorumSystem, pidMap))
+	}
+
+	voteSet.mtx.Lock()
+	defer voteSet.mtx.Unlock()
+
+	// We first have to map Tendermint's validator types to the ones used in our quorum system.
+	mappedValidators := process.NewSet()
+	for _, tendermintValidator := range voteSet.valSet.Validators {
+		mappedID, ok := pidMap.FromString(tendermintValidator.Address.String())
+		if !ok {
+			panic(fmt.Sprintf("VoteSet.IsQuorum: Unable to map validator %s to quorum validator", tendermintValidator.Address))
+		}
+		mappedValidators.Add(&mappedID)
+	}
+
+	_, isQuorum := quorumSystem.IsQuorum(*mappedValidators)
+	return isQuorum
 }
 
 func (voteSet *VoteSet) HasAll() bool {
@@ -489,6 +532,7 @@ func (voteSet *VoteSet) HasAll() bool {
 	}
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
+	// TODO MS change to quorum
 	return voteSet.sum == voteSet.valSet.TotalVotingPower()
 }
 
@@ -644,6 +688,8 @@ func (voteSet *VoteSet) LogString() string {
 
 // return the power voted, the total, and the fraction
 func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
+	// [MS Quorums TotalVotingPower]: SAFE, only used for String-formatting of
+	// VoteSet.
 	voted, total := voteSet.sum, voteSet.valSet.TotalVotingPower()
 	fracVoted := float64(voted) / float64(total)
 	return voted, total, fracVoted
@@ -733,6 +779,33 @@ func (vs *blockVotes) getByIndex(index int32) *Vote {
 		return nil
 	}
 	return vs.votes[index]
+}
+
+// isQuorum returns true if this set of votes for one specific block
+// constitutes a quorum.
+func (vs *blockVotes) isQuorum(quorumSystem *quorum.System, pidMap *parser.ProcessIdentityMap) bool {
+	if vs == nil {
+		return false
+	}
+
+	if quorumSystem == nil || pidMap == nil {
+		panic(fmt.Sprintf("blockVotes.isQuorum: quorumSystem (%v) or pidMap (%v) was nil", quorumSystem, pidMap))
+	}
+
+	// the blockVotes type does not contain full validator structs, but it does
+	// contain the validators' pubkeys. Extract those, and map them to the
+	// process type used in the quorum system.
+	mappedValidators := process.NewSet()
+	for _, vote := range vs.votes {
+		mappedID, ok := pidMap.FromString(vote.ValidatorAddress.String())
+		if !ok {
+			panic(fmt.Sprintf("blockVotes.isQuorum: Unable to map validator %s to quorum validator", vote.ValidatorAddress))
+		}
+		mappedValidators.Add(&mappedID)
+	}
+
+	_, isQuorum := quorumSystem.IsQuorum(*mappedValidators)
+	return isQuorum
 }
 
 //--------------------------------------------------------------------------------

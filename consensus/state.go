@@ -1439,7 +1439,7 @@ func (cs *State) enterPrevoteWait(height int64, round int32) {
 		return
 	}
 
-	if !cs.Votes.Prevotes(round).HasTwoThirdsAny() {
+	if !cs.Votes.Prevotes(round).IsQuorum(cs.quorumSystem, cs.identityMap) {
 		panic(fmt.Sprintf(
 			"entering prevote wait step (%v/%v), but prevotes does not have any +2/3 votes",
 			height, round,
@@ -1598,7 +1598,7 @@ func (cs *State) enterPrecommitWait(height int64, round int32) {
 		return
 	}
 
-	if !cs.Votes.Precommits(round).HasTwoThirdsAny() {
+	if !cs.Votes.Precommits(round).IsQuorum(cs.quorumSystem, cs.identityMap) {
 		panic(fmt.Sprintf(
 			"entering precommit wait step (%v/%v), but precommits does not have any +2/3 votes",
 			height, round,
@@ -1836,6 +1836,7 @@ func (cs *State) finalizeCommit(height int64) {
 
 func (cs *State) recordMetrics(height int64, block *types.Block) {
 	cs.metrics.Validators.Set(float64(cs.Validators.Size()))
+	// [MS Quorums TotalVotingPower]: SAFE, only used to report metrics.
 	cs.metrics.ValidatorsPower.Set(float64(cs.Validators.TotalVotingPower()))
 
 	var (
@@ -2264,6 +2265,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	if vote.Round == cs.Round {
 		vals := cs.state.Validators
 		_, val := vals.GetByIndex(vote.ValidatorIndex)
+		// [MS Quorums TotalVotingPower]: SAFE, only used to report metrics.
 		cs.metrics.MarkVoteReceived(vote.Type, val.VotingPower, vals.TotalVotingPower())
 	}
 
@@ -2333,7 +2335,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 		// If +2/3 prevotes for *anything* for future round:
 		switch {
-		case cs.Round < vote.Round && prevotes.HasTwoThirdsAny():
+		case cs.Round < vote.Round && prevotes.IsQuorum(cs.quorumSystem, cs.identityMap):
 			// Round-skip if there is any 2/3+ of votes ahead of us
 			cs.enterNewRound(height, vote.Round)
 
@@ -2341,7 +2343,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			blockID, ok := prevotes.TwoThirdsMajority()
 			if ok && (cs.isProposalComplete() || len(blockID.Hash) == 0) {
 				cs.enterPrecommit(height, vote.Round)
-			} else if prevotes.HasTwoThirdsAny() {
+			} else if prevotes.IsQuorum(cs.quorumSystem, cs.identityMap) {
 				cs.enterPrevoteWait(height, vote.Round)
 			}
 
@@ -2375,7 +2377,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			} else {
 				cs.enterPrecommitWait(height, vote.Round)
 			}
-		} else if cs.Round <= vote.Round && precommits.HasTwoThirdsAny() {
+		} else if cs.Round <= vote.Round && precommits.IsQuorum(cs.quorumSystem, cs.identityMap) {
 			cs.enterNewRound(height, vote.Round)
 			cs.enterPrecommitWait(height, vote.Round)
 		}
@@ -2556,6 +2558,7 @@ func (cs *State) emitPrecommitTimeoutMetrics(round int32) {
 	}
 
 	// Calculate stake percentage of votes collected during TimeoutCommit
+	// [MS Quorums TotalVotingPower]: SAFE, only used to report metrics.
 	totalPossibleVotingPower := cs.Validators.TotalVotingPower()
 	var stakePercentage float64
 	if totalPossibleVotingPower > 0 {
@@ -2587,6 +2590,7 @@ func (cs *State) calculatePrecommitMessageDelayMetrics() {
 	for _, v := range pl {
 		_, val := cs.Validators.GetByAddress(v.ValidatorAddress)
 		votingPowerSeen += val.VotingPower
+		// [MS Quorums TotalVotingPower]: SAFE, only used to report metrics.
 		if votingPowerSeen >= cs.Validators.TotalVotingPower()*2/3+1 {
 			cs.metrics.QuorumPrecommitDelay.With("proposer_address", cs.Validators.GetProposer().Address.String()).Set(v.Timestamp.Sub(cs.Proposal.Timestamp).Seconds())
 			break
@@ -2610,6 +2614,7 @@ func (cs *State) calculatePrevoteMessageDelayMetrics() {
 	for _, v := range pl {
 		_, val := cs.Validators.GetByAddress(v.ValidatorAddress)
 		votingPowerSeen += val.VotingPower
+		// [MS Quorums TotalVotingPower]: SAFE, only used to report metrics.
 		if votingPowerSeen >= cs.Validators.TotalVotingPower()*2/3+1 {
 			cs.metrics.QuorumPrevoteDelay.With("proposer_address", cs.Validators.GetProposer().Address.String()).Set(v.Timestamp.Sub(cs.Proposal.Timestamp).Seconds())
 			break

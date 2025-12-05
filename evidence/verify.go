@@ -140,6 +140,7 @@ func VerifyLightClientAttack(
 
 	// Assert the correct amount of voting power of the validator set
 	if evTotal, valsTotal := e.TotalVotingPower, commonVals.TotalVotingPower(); evTotal != valsTotal {
+		// [MS Quorums TotalVotingPower]: TODO evidence-handling
 		return fmt.Errorf("total voting power from the evidence and our validator set does not match (%d != %d)",
 			evTotal, valsTotal)
 	}
@@ -210,6 +211,7 @@ func VerifyDuplicateVote(e *types.DuplicateVoteEvidence, chainID string, valSet 
 			e.ValidatorPower, val.VotingPower)
 	}
 	if valSet.TotalVotingPower() != e.TotalVotingPower {
+		// [MS Quorums TotalVotingPower]: TODO evidence-handling
 		return fmt.Errorf("total voting power from the evidence and our validator set does not match (%d != %d)",
 			e.TotalVotingPower, valSet.TotalVotingPower())
 	}
@@ -234,6 +236,7 @@ func validateABCIEvidence(
 	commonVals *types.ValidatorSet,
 	trustedHeader *types.SignedHeader,
 ) error {
+	// [MS Quorums TotalVotingPower]: TODO evidence-handling
 	if evTotal, valsTotal := ev.TotalVotingPower, commonVals.TotalVotingPower(); evTotal != valsTotal {
 		return fmt.Errorf("total voting power from the evidence and our validator set does not match (%d != %d)",
 			evTotal, valsTotal)
