@@ -168,9 +168,22 @@ func NewStateWithQuorums(
 	identityMap *parser.ProcessIdentityMap,
 	options ...StateOption,
 ) *State {
+	if quorumSystem == nil || identityMap == nil {
+		panic(fmt.Sprintf("NewStateWithQuorums: quorumSystem (%v) or identityMap (%v) was nil", quorumSystem, identityMap))
+	}
+
+	// We can use the `StateOption` type to modify the consensus state, setting
+	// the quorum system and identity map attributes, before `NewState` proceeds
+	// with its initialization, which will involve operations which need those to
+	// be present.
+	// See the implementation of `NewState` below if confused.
+	injectQuorumSystem := func(cs *State) {
+		cs.quorumSystem = quorumSystem
+		cs.identityMap = identityMap
+	}
+	options = append(options, injectQuorumSystem)
+
 	out := NewState(config, state, blockExec, blockStore, txNotifier, evpool, options...)
-	out.quorumSystem = quorumSystem
-	out.identityMap = identityMap
 
 	return out
 }
