@@ -91,6 +91,10 @@ func NewVoteSet(
 	if height == 0 {
 		panic("Cannot make VoteSet for height == 0, doesn't make sense.")
 	}
+	// fmt.Printf("[QUORUM] NewVoteSet: Initializing VoteSet @ %d/%d\n", height, round)
+	if quorumSystem == nil || pidMap == nil {
+		panic(fmt.Sprintf("NewVoteSet: Initialized VoteSet @ %d/%d with nil quorum system or identity map, would be non-functional\n", height, round))
+	}
 	return &VoteSet{
 		chainID:       chainID,
 		height:        height,
@@ -316,19 +320,20 @@ func (voteSet *VoteSet) addVerifiedVote(
 	}
 
 	// Before adding to votesByBlock, see if we'll exceed quorum
-	origSum := votesByBlock.sum
-	// [MS Quorums TotalVotingPower]: TODO change to quorums
-	// TODO continue here
-	quorum := voteSet.valSet.TotalVotingPower()*2/3 + 1
+	// origSum := votesByBlock.sum
+	// quorum := voteSet.valSet.TotalVotingPower()*2/3 + 1
+	hadQuorumBefore := votesByBlock.isQuorum(voteSet.quorumSystem, voteSet.pidMap)
 
 	// Add vote to votesByBlock
 	votesByBlock.addVerifiedVote(vote, votingPower)
 
-	// If we just crossed the quorum threshold and have 2/3 majority...
-	// TODO MS touch this
-	if origSum < quorum && quorum <= votesByBlock.sum {
+	// If we just crossed the quorum threshold...
+	if !hadQuorumBefore && votesByBlock.isQuorum(voteSet.quorumSystem, voteSet.pidMap) {
+		fmt.Println("[QUORUM] Crossed quorum threshold for this block for the first time")
+		// if origSum < quorum && quorum <= votesByBlock.sum {
 		// Only consider the first quorum reached
 		if voteSet.maj23 == nil {
+			fmt.Println("[QUORUM] Did not yet have quorum for any block, remembering this vote set")
 			maj23BlockID := vote.BlockID
 			voteSet.maj23 = &maj23BlockID
 			// And also copy votes over to voteSet.votes
@@ -792,11 +797,22 @@ func (vs *blockVotes) isQuorum(quorumSystem *quorum.System, pidMap *parser.Proce
 		panic(fmt.Sprintf("blockVotes.isQuorum: quorumSystem (%v) or pidMap (%v) was nil", quorumSystem, pidMap))
 	}
 
+	// fmt.Printf("[QUORUM] Calling into blockVotes.isQuorum. For reference, its sum: %d, number of votes: %d, peer claims to have 2/3 majority: %v\n", vs.sum, len(vs.votes), vs.peerMaj23)
+
 	// the blockVotes type does not contain full validator structs, but it does
 	// contain the validators' pubkeys. Extract those, and map them to the
 	// process type used in the quorum system.
 	mappedValidators := process.NewSet()
 	for _, vote := range vs.votes {
+		if vote == nil {
+			// When allocating vs.votes, rather than setting the capacity to the
+			// number of validators, they set the **size** to the number of
+			// validators, see `newBlockVotes`.
+			// As it's a slice of pointers, this leads to a bunch of null-pointers.
+			// These correspond to votes which haven't arrived yet, so we'll have to
+			// ignore them.
+			continue
+		}
 		mappedID, ok := pidMap.FromString(vote.ValidatorAddress.String())
 		if !ok {
 			panic(fmt.Sprintf("blockVotes.isQuorum: Unable to map validator %s to quorum validator", vote.ValidatorAddress))
