@@ -329,7 +329,7 @@ func (voteSet *VoteSet) addVerifiedVote(
 
 	// If we just crossed the quorum threshold...
 	if !hadQuorumBefore && votesByBlock.isQuorum(voteSet.quorumSystem, voteSet.pidMap) {
-		fmt.Println("[QUORUM] Crossed quorum threshold for this block for the first time")
+		fmt.Printf("[QUORUM] Crossed quorum threshold for this block for the first time with process set: %v\n", votesByBlock.votes)
 		// if origSum < quorum && quorum <= votesByBlock.sum {
 		// Only consider the first quorum reached
 		if voteSet.maj23 == nil {
@@ -815,7 +815,11 @@ func (vs *blockVotes) isQuorum(quorumSystem *quorum.System, pidMap *parser.Proce
 		}
 		mappedID, ok := pidMap.FromString(vote.ValidatorAddress.String())
 		if !ok {
-			panic(fmt.Sprintf("blockVotes.isQuorum: Unable to map validator %s to quorum validator", vote.ValidatorAddress))
+			knownIdentities := ""
+			for _, id := range pidMap.Identities() {
+				knownIdentities += "- " + id.String() + "\n"
+			}
+			panic(fmt.Sprintf("blockVotes.isQuorum: Unable to map validator %s to quorum validator.\n Known identities: %s", vote.ValidatorAddress, knownIdentities))
 		}
 		mappedValidators.Add(&mappedID)
 	}

@@ -639,7 +639,12 @@ func loadQuorumSystemOrDefault(
 			return mySystem, pidMap, fmt.Errorf("Unable to read quorum specification: %w", err)
 		}
 
-		native, pidMap := jsonSystem.ToNativeQuorum(nil)
+		// We must pre-declare native, rather than using `native, pidMap := ...` in
+		// the line below, so that `pidMap`, declared in the outer scope, gets
+		// properly set.
+		// Should be refactored, e.g. into separte methods.
+		var native quorum.AsymmetricSystem
+		native, pidMap = jsonSystem.ToNativeQuorum(nil)
 
 		// .String() on this type will nicely hex-encode it.
 		address := pubKey.Address().String()
