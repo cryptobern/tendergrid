@@ -15,6 +15,8 @@ GOOS ?= linux
 GOARCH ?= amd64
 GOARM ?=
 
+LOCALNET_CONFIG_HOME=~/.cometbft-testnet
+
 ifeq (linux/arm,$(findstring linux/arm,$(TARGETPLATFORM)))
 	GOOS=linux
 	GOARCH=arm
@@ -323,6 +325,21 @@ localnet-start: localnet-stop build-docker-localnode
 	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --config /etc/cometbft/config-template.toml --o . --starting-ip-address 192.167.10.2; fi
 	docker compose up -d
 .PHONY: localnet-start
+
+michael-localnet-init: localnet-stop build-docker-localnode
+	# Mount the target directory (LOCALNET_CONFIG_HOME) as well as the built binary (from build/) into the container.
+	@if ! [ -f ~/$(LOCALNET_CONFIG_HOME)/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build/cometbft:/cometbft/cometbft -v $(LOCALNET_CONFIG_HOME)/:/config:Z cometbft/localnode testnet --config /etc/cometbft/config-template.toml --o /config --starting-ip-address 192.167.10.2; fi
+.PHONY: michael-localnet-init
+
+michael-localnet-reset: localnet-stop
+	@rm -r $(LOCALNET_CONFIG_HOME)
+	@mkdir $(LOCALNET_CONFIG_HOME)
+.PHONY: michael-localnet-reset
+
+michael-localnet-start: localnet-stop build-docker-localnode
+	@echo "Use docker compose up -d"
+.PHONY: michael-localnet-start
+
 
 #? localnet-stop: Stop testnet
 localnet-stop:
