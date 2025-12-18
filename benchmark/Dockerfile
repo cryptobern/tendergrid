@@ -36,5 +36,10 @@ STOPSIGNAL SIGTERM
 # P2P and RPC ports
 EXPOSE 26656 26657
 
+# Expose a volume in /cometbft where the config can be mounted later.
+# Defining it in the Dockerfile will ensure that file permissions work out,
+# even though it runs as a non-privileged user in the container.
+VOLUME /cometbft
+
 ENTRYPOINT ["/usr/bin/cometbft"]
 CMD ["node"]
