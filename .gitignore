@@ -58,3 +58,6 @@ proto/spec/**/*.pb.go
 # Python virtual environments
 .venv
 go.work.sum
+
+# Custom netrc file to pass into build context, to allow cloning private dependencies.
+netrc

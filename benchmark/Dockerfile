@@ -1,7 +1,15 @@
 # Stage 1: Build binary in container with Go installed
 FROM golang:1.25-alpine3.23 AS builder
 
-RUN apk update && apk upgrade
+# We clone private dependencies via git
+RUN apk update && apk upgrade && apk add git
+
+# Ensure these are not fetched via the global Go proxies, as they might have
+# issues with private repositories.
+ENV GOPRIVATE=gitlab.inf.unibe.ch
+
+# Copy .netrc file, which is passed in as a secret, to proper place.
+RUN --mount=type=secret,id=netrc cp /run/secrets/netrc /root/.netrc && chmod 600 /root/.netrc
 
 COPY / /cometbft
 WORKDIR /cometbft
