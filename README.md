@@ -1,4 +1,44 @@
+# Tendergrid
+
+This is a fork of version `v0.38.19` of the [official CometBFT repository](https://github.com/cometbft/cometbft), with changes made to permit
+for benchmarks as part of the 'Asymmetric Grid Quorum Systems for Heterogeneous
+Processes' paper, to be published at [CCS 2026](https://www.sigsac.org/ccs/CCS2026/).
+
+Changes involve:
+- Adaptation of Tendermint consensus algorithm to support asymmetric quorum
+  systems.
+- Custom Docker container, suitable for use as part of a benchmark.
+- Small bugfixes in utility to batch-create system configurations. These have
+  since been merged to upstream.
+
+There are three relevant branches in this repository:
+- `main`: Equal to the `main` branch of upstream at the time when it was forked.
+- `baseline`: Unmodified version of CometBFT, containing only required bugfixes
+  and the benchmarking container.
+- `quorum-integration`: Modified version of CometBFT, with added support for
+  asymmetric generalized quorum systems.
+
+## Usage
+
+The recommended way to use this repository is to build two versions of the
+Docker container, one for the CometBFT baseline, and one for the modified
+version supporting asymmetric trust. To do so, check out the appropriate
+branch, build the container using the Dockerfile at `benchmark/Dockerfile`, and
+publish it to a container registry of your choice. E.g. to build the baseline:
+```
+git checkout baseline
+docker build -f benchmark/Dockerfile -t CHANGEME/tendergrid:ccs26-baseline .
+docker push CHANGEME/tendergrid:ccs26-baseline
+```
+
+For convenience, we provide pre-built images of both versions in a [public
+Dockerhub repository](https://hub.docker.com/r/cryptobern/tendergrid):
+- `cryptobern/tendergrid:ccs26-baseline`: Baseline of CometBFT
+- `cryptobern/tendergrid:ccs26-grid`: With support for asymmetric quorum systems
+
 # CometBFT
+
+What follows is the original `README.md` of CometBFT at the time of the fork.
 
 [Byzantine-Fault Tolerant][bft] [State Machine Replication][smr]. Or
 [Blockchain], for short.
