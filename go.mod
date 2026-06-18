@@ -147,3 +147,5 @@ retract (
 	// superseeded by v0.38.3 because of ASA-2024-001
 	[v0.38.0, v0.38.2]
 )
+
+replace gitlab.inf.unibe.ch/crypto/2023.asymmetric.consensus/asymmetric-quorums v0.0.0-20251203153306-42021cdb5b04 => github.com/cryptobern/asymmetric-quorums v0.0.0-20251203153306-42021cdb5b04
